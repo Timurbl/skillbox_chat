@@ -18,12 +18,19 @@ class Client(Protocol):
         """
         Обработчик подключения нового клиента
         """
-        self.ip = self.transport.getHost().host
+        self.ip = self.transport.getPeer().host
         self.factory.clients.append(self)
+        self.factory.chat_login.append(self.login)
 
         print(f"Client connected: {self.ip}")
 
-        self.transport.write("Welcome to the chat v0.1\n".encode())
+        notification = "Welcome to the chat v0.1\n"
+        self.transport.write(notification.encode())
+
+
+        #for message in self.factory.chat_history:
+        #   self.transport.write(message.encode())
+
 
     def dataReceived(self, data: bytes):
         """
@@ -32,21 +39,35 @@ class Client(Protocol):
         """
         message = data.decode().replace('\n', '')
 
+
+
         if self.login is not None:
             server_message = f"{self.login}: {message}"
             self.factory.notify_all_users(server_message)
+            self.factory.chat_history.append(server_message)
 
             print(server_message)
         else:
-            if message.startswith("login:"):
-                self.login = message.replace("login:", "")
 
-                notification = f"New user connected: {self.login}"
+            self.login = message.replace("login:", "")
+            self.factory.chat_login.append(self.login)
 
-                self.factory.notify_all_users(notification)
-                print(notification)
+            if self.factory.chat_login.count(self.login) > 1:
+                self.transport.write(f"login: '{self.login}' is reserved\n".encode())
+                self.transport.write("Your login >>> ".encode())
+                self.factory.chat_login.remove(self.login)
+                self.login = None
             else:
-                print("Error: Invalid client login")
+                notification = f"New user connected: {self.login}"
+                self.factory.notify_all_users(notification)
+
+                #self.factory.chat_history.append(notification)
+                #self.transport.write("Welcome to the chat v0.1\n".encode())
+                for message in self.factory.chat_history:
+                    self.transport.write((str(message) + "\n").encode())
+
+
+                #print(notification)
 
     def connectionLost(self, reason=None):
         """
@@ -59,12 +80,16 @@ class Client(Protocol):
 
 class Chat(Factory):
     clients: list
+    chat_login: list
+    chat_history: list
 
     def __init__(self):
         """
         Инициализация сервера
         """
         self.clients = []
+        self.chat_history = []
+        self.chat_login = []
         print("*" * 10, "\nStart server \nCompleted [OK]")
 
     def startFactory(self):
@@ -72,7 +97,7 @@ class Chat(Factory):
         Запуск процесса ожидания новых клиентов
         :return:
         """
-        print("\n\nServer started [OK]")
+        print("\n\nStart listening for the clients...")
 
     def buildProtocol(self, addr):
         """
