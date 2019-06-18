@@ -27,19 +27,12 @@ class Client(Protocol):
         notification = "Welcome to the chat v0.1\n"
         self.transport.write(notification.encode())
 
-
-        #for message in self.factory.chat_history:
-        #   self.transport.write(message.encode())
-
-
     def dataReceived(self, data: bytes):
         """
         Обработчик нового сообщения от клиента
         :param data:
         """
         message = data.decode().replace('\n', '')
-
-
 
         if self.login is not None:
             server_message = f"{self.login}: {message}"
@@ -65,9 +58,6 @@ class Client(Protocol):
                 #self.transport.write("Welcome to the chat v0.1\n".encode())
                 for message in self.factory.chat_history:
                     self.transport.write((str(message) + "\n").encode())
-
-
-                #print(notification)
 
     def connectionLost(self, reason=None):
         """
