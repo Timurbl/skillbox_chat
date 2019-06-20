@@ -42,7 +42,7 @@ class TestWindow(wx.Frame):
         self.submit_btn.Bind(wx.EVT_BUTTON, self.on_btn_click)
         self.msg_box.Bind(wx.EVT_TEXT_ENTER, self.on_btn_click)
 
-    def on_btn_click(self):
+    def on_btn_click(self, event):
         message = self.msg_box.GetValue()
         self.chat_box.WriteText(f"{message}\n")
 
