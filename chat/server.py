@@ -1,3 +1,4 @@
+from time import ctime
 from twisted.internet import reactor
 from twisted.internet.protocol import ServerFactory
 from twisted.protocols.basic import LineOnlyReceiver
@@ -19,6 +20,7 @@ class Client(LineOnlyReceiver):
         """
         Обработчик подключения нового клиента
         """
+
         self.ip = self.transport.getPeer().host
         self.factory.clients.append(self)
         self.factory.chat_login.append(self.login)
@@ -28,34 +30,44 @@ class Client(LineOnlyReceiver):
         notification = "Welcome to the chat v0.1\n"
         self.sendLine(notification.encode())
 
+        notification = "Enter your login"
+        self.sendLine(notification.encode())
+
     def lineReceived(self, data: bytes):
         """
         Обработчик нового сообщения от клиента
         :param data:
         """
         message = data.decode().replace('\n', '')
+        print("line received: ", message)
 
         if self.login is not None:
-            server_message = f"{self.login}: {message}"
+            time = ctime().split()[3]
+            server_message = f"[{time}] {self.login}: {message}"
             self.factory.notify_all_users(server_message)
             self.factory.chat_history.append(server_message)
 
             # print("ser_msg", server_message)
         else:
 
-            self.login = message.replace("login:", "")
+            self.login = message
             self.factory.chat_login.append(self.login)
 
             if self.factory.chat_login.count(self.login) > 1:
-                pass
+
+                # pass
                 # TODO: login reservation
-                ''' 
-                self.transport.write(f"login: '{self.login}' is reserved\n".encode())
-                self.transport.write("Your login >>> ".encode())
+
+                self.sendLine(f"login: '{self.login}' is reserved\n".encode())
+                self.sendLine("Enter your login again".encode())
                 self.factory.chat_login.remove(self.login)
                 self.login = None
-                '''
+
             else:
+                self.sendLine("__del_all_hist".encode())
+
+                notification = "Welcome to the chat v0.1\n"
+                self.sendLine(notification.encode())
                 # self.factory.chat_history.append(notification)
                 # self.transport.write("Welcome to the chat v0.1\n".encode())
                 for message in self.factory.chat_history:
@@ -71,7 +83,11 @@ class Client(LineOnlyReceiver):
         :param reason:
         """
         self.factory.clients.remove(self)
-        print(f"Client disconnected: {self.ip}")
+        self.factory.chat_login.remove(self.login)
+
+        notification = f"Chat member disconnected: {self.login}"
+        self.factory.notify_all_users(notification)
+        print(notification)
 
 
 class Chat(ServerFactory):
@@ -103,6 +119,7 @@ class Chat(ServerFactory):
         :param addr:
         :return:
         """
+        print("new user")
         return Client(self)
 
     def notify_all_users(self, data: str):
@@ -122,5 +139,5 @@ class Chat(ServerFactory):
 
 
 if __name__ == '__main__':
-    reactor.listenTCP(7410, Chat())
+    reactor.listenTCP(1720, Chat())
     reactor.run()

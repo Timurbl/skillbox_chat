@@ -19,6 +19,7 @@ class ChatClient(LineOnlyReceiver):
         Запоминаем фабрику для последующего обращения
         :param factory:
         """
+        print("init chat client")
         self.factory = factory
 
     def connectionMade(self):
@@ -34,9 +35,15 @@ class ChatClient(LineOnlyReceiver):
         :param line:
         :return:
         """
+
+
         message = line.decode()  # раскодируем
-        print(message)
-        self.factory.window.chat_box.AppendText(f"{message}\n")  # добавим в поле сообщений
+        print("line received: ", message)
+
+        if message == "__del_all_hist":
+            self.factory.window.chat_box.SetValue("")
+        else:
+            self.factory.window.chat_box.AppendText(f"{message}\n")  # добавим в поле сообщений
 
 
 class ChatFactory(ClientFactory):
@@ -75,25 +82,32 @@ class ChatWindow(wx.Frame):
             size=wx.Size(350, 500)
         )
 
-        self.build_msg_dialog()
+        # self.build_msg_dialog()
 
+        self.build_chat()
+        self.build_handlers()
+    '''
     def build_msg_dialog(self):
         # log in
         box = wx.TextEntryDialog(None, "Enter your login", "Welcome to the chat!")
         if box.ShowModal() == wx.ID_OK:
+
             login = box.GetValue()
-            # self.protocol.sendLine(login.encode())
 
             if login:  # checking reservation
+                # self.protocol.sendLine(login.encode())
+
                 self.build_chat()
                 self.build_handlers()
         else:
             box.Destroy()
+    '''
 
     def build_chat(self):
         panel = wx.BoxSizer(wx.VERTICAL)
 
         self.chat_box = wx.TextCtrl(self, style=wx.TE_READONLY | wx.TE_MULTILINE)
+        # self.chat_box.SetHint("Enter your login")
         self.msg_box = wx.TextCtrl(self)
         self.msg_box.SetHint("Your message")
         self.submit_btn = wx.Button(self, label="Send message")
@@ -110,8 +124,8 @@ class ChatWindow(wx.Frame):
 
     def on_btn_click(self, event):
         message = self.msg_box.GetValue()
-        print(message)
         self.protocol.sendLine(message.encode())
+        print("message send")
         # self.protocol.sendLine(message.encode())
         # self.chat_box.WriteText(f"{message}\n")
         self.msg_box.SetValue("")
@@ -125,7 +139,7 @@ if __name__ == "__main__":
     reactor.registerWxApp(app)
     reactor.connectTCP(
         "localhost",
-        7410,
+        1720,
         ChatFactory(window)
     )
     reactor.run()
