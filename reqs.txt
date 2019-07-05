@@ -3,3 +3,4 @@ wxPython==4.0.6
 PyQt5==5.12.1
 PyQt5-sip==4.19.17
 PyQt5-stubs==5.12.1.0
+PySide2==5.13.0
